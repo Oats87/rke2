@@ -49,6 +49,7 @@ type StaticPodConfig struct {
 	KubeletPath     string
 	DisableETCD     bool
 	IsServer        bool
+	DisableRKE2CloudProvider bool
 }
 
 type CloudProviderConfig struct {
@@ -373,6 +374,36 @@ func (s *StaticPodConfig) ETCD(args executor.ETCDConfig) error {
 	}
 
 	return staticpod.Run(s.ManifestsDir, spa)
+}
+
+// RKE2CloudProvider starts the cloud-provider static pod, once the apiserver is available.
+func (s *StaticPodConfig) RKE2CloudProvider(apiReady <-chan struct{}, args []string) error {
+	image, err := s.Resolver.GetReference(images.RKE2CloudProvider)
+	if err != nil {
+		return err
+	}
+	if err := images.Pull(s.ImagesDir, images.RKE2CloudProvider, image); err != nil {
+		return err
+	}
+	files := []string{}
+	return after(apiReady, func() error {
+		extraArgs := []string{
+			"--allocate-node-cidrs=true",
+			"--cloud-provider=RKE2",
+			"--cluster-cidr="
+		}
+		args = append(extraArgs, args...)
+		return staticpod.Run(s.ManifestsDir, staticpod.Args{
+			Command:     "rke2-cloud-provider",
+			Args:        args,
+			Image:       image,
+			Dirs:        onlyExisting(ssldirs),
+			HealthPort:  10252,
+			HealthProto: "HTTP",
+			CPUMillis:   200,
+			Files:       files,
+		})
+	})
 }
 
 // chownr recursively changes the ownership of the given

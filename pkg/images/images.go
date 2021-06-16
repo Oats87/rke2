@@ -18,6 +18,7 @@ const (
 	KubeControllerManager = "kube-controller-manager-image"
 	KubeScheduler         = "kube-scheduler-image"
 	ETCD                  = "etcd-image"
+	RKE2CloudProvider	  = "rke2-cloud-provider-image"
 	Pause                 = "pause-image"
 )
 
@@ -27,6 +28,7 @@ var (
 	DefaultEtcdImage       = "rancher/hardened-etcd"
 	DefaultKubernetesImage = "rancher/hardened-kubernetes"
 	DefaultPauseImage      = "rancher/pause"
+	DefaultRKE2CloudProviderImage = "rancher/rke2-cloud-provider"
 	DefaultRuntimeImage    = "rancher/rke2-runtime"
 )
 
@@ -46,6 +48,7 @@ type ImageOverrideConfig struct {
 	KubeControllerManager string
 	KubeScheduler         string
 	Pause                 string
+	RKE2CloudProvider	  string
 	Runtime               string
 	ETCD                  string
 }
@@ -72,6 +75,7 @@ func NewResolver(c ImageOverrideConfig) (*Resolver, error) {
 		{KubeControllerManager, c.KubeControllerManager},
 		{KubeScheduler, c.KubeScheduler},
 		{Pause, c.Pause},
+		{RKE2CloudProvider, c.RKE2CloudProvider},
 		{Runtime, c.Runtime},
 	}
 	for _, s := range config {
@@ -210,6 +214,8 @@ func getDefaultImage(i string) (name.Reference, error) {
 		s = DefaultPauseImage
 	case KubeAPIServer, KubeControllerManager, KubeScheduler:
 		s = DefaultKubernetesImage
+	case RKE2CloudProvider:
+		s = DefaultRKE2CloudProviderImage
 	default:
 		return nil, fmt.Errorf("unknown image %s", i)
 	}
